@@ -195,6 +195,10 @@ var
       // determine if the video element has loaded enough of the snapshot source
       // to be ready to apply the rest of the state
       tryToResume = function() {
+        if(snapshot.currentTime === 0 || snapshot.currentTime === null){
+          player.play();
+          return;
+        }
         if (tech.seekable === undefined) {
           // if the tech doesn't expose the seekable time ranges, try to
           // resume playback immediately
@@ -223,11 +227,11 @@ var
       player.play();
       return;
     }
-
+	player.pause();
     player.src(snapshot.src);
     // safari requires a call to `load` to pick up a changed source
     player.load();
-
+	player.loadingSpinner.show();
     player.one('loadedmetadata', tryToResume);
   },
 
@@ -287,6 +291,16 @@ var
 
       endLinearAdMode: function() {
         player.trigger('adend');
+        this.state = 'disabled';
+      },
+      updateCachedSource: function(src) {
+        this.snapshot.src = src;
+      },
+      enable: function() {
+        this.state = 'content-playback';
+      },
+      disable: function() {
+        this.state = 'disabled';
       }
     };
     
@@ -409,8 +423,8 @@ var
             events: {
               'adend': function() {
                 this.state = 'content-playback';
-                removeClass(player.el(), 'vjs-ad-playing');
                 restorePlayerSnapshot(player, this.snapshot);
+                removeClass(player.el(), 'vjs-ad-playing');
               }
             }
           },
@@ -486,6 +500,7 @@ var
               lastSrc = src;
             }
           }
+          //player.trigger('contentupdate');
         };
       // loadstart reliably indicates a new src has been set
       player.on('loadstart', checkSrc);
